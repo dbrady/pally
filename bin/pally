@@ -1,0 +1,60 @@
+#!/usr/bin/env ruby
+require 'yaml'
+require 'trollop'
+require 'rally_rest_api'
+
+require File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib', 'common.rb'))
+
+# usage:
+# pally [options] command <args>
+
+opts = Trollop.options do
+  opt :config, "Configuration file", :default => nil
+  opt :username, "Username", :default => nil
+  opt :password, "Password", :default => nil
+end
+args = ARGV.dup
+
+# ----------------------------------------------------------------------
+# Config file
+if opts[:config]
+  @config_file = opts[:config]
+else 
+  f1 = File.expand_path('~/.pally/pally.yml')
+  f2 = File.expand_path(File.join(File.dirname(__FILE__), '..', 'config', 'pally.yml'))
+  @config_file = File.exist?(f1) ? f1 : f2
+end
+raise "Config file does not exist: #{opts[:config]}" unless File.exists? @config_file
+@config = YAML::load_file @config_file
+
+[:username, :password].each do |arg|
+  @config['login'][arg.to_s] = opts[arg] if opts[arg]
+end
+
+puts ":username => #{@config['login']['username']}, :password => #{@config['login']['password']}"
+
+# ----------------------------------------------------------------------
+# Parse out command
+command = args.shift
+
+puts "COMMAND: #{command}"
+puts '-' * 80
+case command.downcase
+when 'list':
+  raise "Hey, the only thing I know how to list just yet is iterations" unless args[0] == 'iteration'
+  # refactor me: this all goes in lib!
+  @rally = RallyRestAPI.new :username => @config['login']['username'], :password => @config['login']['password']
+
+  @iter = nil
+  @rally.find_all(:iteration).each do |iteration|
+    @iter = iteration
+    puts iteration.name
+  end
+  
+else
+  raise "Unrecognized command: #{command}"
+end
+
+
+
+

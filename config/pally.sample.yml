@@ -1,0 +1,5 @@
+login:
+  base_url: https://rally1.rallydev.com/slm
+  username: my user name
+  password: my password
+  
