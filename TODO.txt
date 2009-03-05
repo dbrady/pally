@@ -1,0 +1,43 @@
+TODO:
+----------------------------------------------------------------------
+
+Feature Ideas from Ben:
+
+- List current stories, tasks and defects in my current iteration
+- Add tasks
+- promote tasks (dbrady 2009-03-04: ?? I assume this means promote
+  them  D->P->C->A ?)
+- Add time to tasks
+- Add comments to tasks
+- Add defect to current iteration and assign time spent on it
+- Edit comments and descriptions in an external editor
+
+
+Feature Ideas from Dave:
+
+- Interactive mode (like irb)
+- List iterations
+- Add a new story to the backlog
+- Change owner of a task
+- Search for tasks
+  - by name
+  - by id
+  - by content
+  - by submitter
+  - by currently-working-on
+- Delete tasks/stories/comments
+
+- Commitment report showing hourly commitment from each user. E.g. At
+  the beginning of each sprint we throw N hours of tasks into the
+  hopper, then we try to divvy them out to various users. This report
+  would show hours grouped by user, and the tasks remaining to be
+  assigned. (Then you could use the "Change owner of a task"
+  feature....)
+
+- Pair shadowing. This is more of a mashup than anything else, but
+  find a way to track pairing hours in Rally, even if it's by a
+  tortuous accounting process, and then have Pally handle all the
+  tortuous bits. There's various ways to do it, like creating a
+  "Pairing" task or shadowing stories with pair stories. All I'm
+  saying here is I'd want Pally to do it.
+

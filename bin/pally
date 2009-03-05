@@ -12,6 +12,8 @@ opts = Trollop.options do
   opt :config, "Configuration file", :default => nil
   opt :username, "Username", :default => nil
   opt :password, "Password", :default => nil
+  opt :project, "Project", :default => nil
+  opt :iteration, "Iteration", :default => nil
 end
 args = ARGV.dup
 
@@ -31,26 +33,27 @@ raise "Config file does not exist: #{opts[:config]}" unless File.exists? @config
   @config['login'][arg.to_s] = opts[arg] if opts[arg]
 end
 
-puts ":username => #{@config['login']['username']}, :password => #{@config['login']['password']}"
+# ----------------------------------------------------------------------
+# Crap that shouldn't even be in here but what ya gonna do
+def login(username, password)
+  @rally = RallyRestAPI.new :username => username, :password => password
+end
 
 # ----------------------------------------------------------------------
 # Parse out command
 command = args.shift
+collection = args.shift
 
-puts "COMMAND: #{command}"
+puts "COMMAND: #{command} #{collection}"
 puts '-' * 80
 case command.downcase
-when 'list':
-  raise "Hey, the only thing I know how to list just yet is iterations" unless args[0] == 'iteration'
-  # refactor me: this all goes in lib!
-  @rally = RallyRestAPI.new :username => @config['login']['username'], :password => @config['login']['password']
-
-  @iter = nil
-  @rally.find_all(:iteration).each do |iteration|
-    @iter = iteration
-    puts iteration.name
+when 'list'
+  login @config['login']['username'], @config['login']['password']
+  if RallyRestAPI::ALLOWED_TYPES.include? collection
+    puts @rally.find_all(collection).map {|i| "#{i.type}: #{i.name} | #{i.body}" }
+  else
+    raise "LIST: unrecognized list type. Got #{collection.inspect}, expected one of [#{RallyRestAPI::ALLOWED_TYPES * ', '}]"
   end
-  
 else
   raise "Unrecognized command: #{command}"
 end
