@@ -8,7 +8,7 @@ name. But the idea's the main thing, right?
 = Setup =
 
 Create pally.yml. You can put it in config, like a rails app, or you
-can put it in ~/.pally (less chance you'll give it to someone on a USB
+can put it at ~/.pally/pally.yml (less chance you'll give it to someone on a USB
 stick later).
 
 
