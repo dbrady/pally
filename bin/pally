@@ -61,7 +61,7 @@ when 'list'
     
   elsif collection == 'mytasks'
     tasks = @rally.find(:task, :fetch => true) do
-      equal :owner, $config['login']['username'] # 'david.brady@leadmediapartners.com'
+      equal :owner, $config['login']['username']
       not_equal :state, 'Completed'
     end
 
