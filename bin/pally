@@ -68,12 +68,16 @@ when 'list'
     tasks.each do |t|
       tasks_by_project[t.project.name] << t
     end
-    plen = tasks_by_project.keys.map{|k| k.size}.max
-    slen = tasks_by_project.values.map{|vv| vv.map {|v| v.state.size}.max}.max
-    fidlen = tasks_by_project.values.map{|vv| vv.map {|v| v.formatted_i_d.size}.max}.max
+    # DRY this up! Get the max length of each desired column.
+    plen = ["Project".size, tasks_by_project.keys.map{|k| k.size}.max].max
+    slen = ["State".size, tasks_by_project.values.map{|vv| vv.map {|v| v.state.size}.max}.max].max
+    fidlen = ["ID".size,tasks_by_project.values.map{|vv| vv.map {|v| v.formatted_i_d.size}.max}.max].max
+    estlen = ["Est".size,tasks_by_project.values.map{|vv| vv.map {|v| (v.estimate||"").size}.max}.max].max
+    todolen = ["ToDo".size,tasks_by_project.values.map{|vv| vv.map {|v| (v.to_do||"").size}.max}.max].max
+    puts "%#{plen}s | %#{fidlen}s | %#{estlen}s | %#{todolen}s | %#{slen}s | %s" % ["Project", "ID", "Est", "ToDo", "State", "Task"]
     tasks_by_project.each do |project, tasks|
       tasks.each do |task|
-        puts "%#{plen}s | %#{fidlen}s | %#{slen}s | %s" % [task.project, task.formatted_i_d, task.state, task.name]
+        puts "%#{plen}s | %#{fidlen}s | %#{estlen}s | %#{todolen}s | %#{slen}s | %s" % [task.project, task.formatted_i_d, task.estimate, task.to_do, task.state, task.name]
       end
     end
     
