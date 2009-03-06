@@ -1,33 +1,63 @@
 TODO:
-----------------------------------------------------------------------
 
-Feature Ideas from Ben:
+- The proof of concept script is done enough to, well, prove the
+  concept. Now it's time to clean it up. Need to create a Pally class
+  in lib and move all the hardcoded script crap out there.
+
+- Break out the command-line parsing and handling into a controller
+
+- If you symlink to bin/pally, the File.dirname(__FILE__) will grab
+  the symlink's directory rather than the lib. This HAS to be a
+  well-solved problem in Ruby, doesn't it? I don't want to mandate
+  that the include dir is over in gems, partly because of all the gems
+  hataz out there and mostly because when I'm devving on Pally I want
+  it routing to my dev folder, not the installed gem....
+
+- Installation help for required gems (rally_rest_api, ruport, etc)
+
+- Don't know how to list users from API. Gonna want this in order to
+  change owners
 
 - List current stories, tasks and defects in my current iteration
+
 - Add tasks
+
 - promote tasks (dbrady 2009-03-04: ?? I assume this means promote
   them  D->P->C->A ?)
+
 - Add time to tasks
+
 - Add comments to tasks
+
 - Add defect to current iteration and assign time spent on it
+
 - Edit comments and descriptions in an external editor
 
-
-Feature Ideas from Dave:
+- Establish custom display template, e.g. do I want to show
+  formattedID and name, or name, owner and project, etc
 
 - Interactive mode (like irb)
-- Show a task/iteration/project/workspace
-- Searth for task/iter/etc by id
+
+- Show a task/iteration/project/workspace as a "screen", like a clean
+  text report
+
+- Search for task/iter/etc by id
+
 - List iterations
+
 - Change default current iteration/project
+
 - Add a new story to the backlog
+
 - Change owner of a task
-- Search for tasks
+
+- Search for tasks (needs: a CLI search syntax)
   - by name
   - by id
   - by content
   - by submitter
   - by currently-working-on
+
 - Delete tasks/stories/comments
 
 - Commitment report showing hourly commitment from each user. E.g. At
