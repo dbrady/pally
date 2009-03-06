@@ -22,17 +22,17 @@ args = ARGV.dup
 # ----------------------------------------------------------------------
 # Config file
 if opts[:config]
-  @config_file = opts[:config]
+  $config_file = opts[:config]
 else 
   f1 = File.expand_path('~/.pally/pally.yml')
   f2 = File.expand_path(File.join(File.dirname(__FILE__), '..', 'config', 'pally.yml'))
-  @config_file = File.exist?(f1) ? f1 : f2
+  $config_file = File.exist?(f1) ? f1 : f2
 end
-raise "Config file does not exist: #{opts[:config]}" unless File.exists? @config_file
-@config = YAML::load_file @config_file
+raise "Config file does not exist: #{opts[:config]}" unless File.exists? $config_file
+$config = YAML::load_file $config_file
 
 [:username, :password].each do |arg|
-  @config['login'][arg.to_s] = opts[arg] if opts[arg]
+  $config['login'][arg.to_s] = opts[arg] if opts[arg]
 end
 
 # ----------------------------------------------------------------------
@@ -45,6 +45,7 @@ def listable?(type)
   RallyRestAPI::ALLOWED_TYPES.include? type
 end
 
+
 # ----------------------------------------------------------------------
 # Parse out command
 command = args.shift
@@ -54,12 +55,13 @@ puts "COMMAND: #{command} #{collection}"
 puts '-' * 80
 case command.downcase
 when 'list'
-  login @config['login']['username'], @config['login']['password']
+  login $config['login']['username'], $config['login']['password']
   if listable? collection
     puts @rally.find_all(collection).map {|i| "#{i.type}: #{i.name} | #{i.body}" }
+    
   elsif collection == 'mytasks'
     tasks = @rally.find(:task, :fetch => true) do
-      equal :owner, 'david.brady@leadmediapartners.com'
+      equal :owner, $config['login']['username'] # 'david.brady@leadmediapartners.com'
       not_equal :state, 'Completed'
     end
 
