@@ -2,7 +2,6 @@
 require 'rubygems'
 require 'yaml'
 require 'trollop'
-require 'ruport'
 require 'rally_rest_api'
 
 require File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib', 'common.rb'))
