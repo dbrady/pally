@@ -71,9 +71,10 @@ when 'list'
     end
     plen = tasks_by_project.keys.map{|k| k.size}.max
     slen = tasks_by_project.values.map{|vv| vv.map {|v| v.state.size}.max}.max
+    fidlen = tasks_by_project.values.map{|vv| vv.map {|v| v.formatted_i_d.size}.max}.max
     tasks_by_project.each do |project, tasks|
       tasks.each do |task|
-        puts "%#{plen}s | %#{slen}s | %s" % [task.project, task.state, task.name]
+        puts "%#{plen}s | %#{fidlen}s | %#{slen}s | %s" % [task.project, task.formatted_i_d, task.state, task.name]
       end
     end
     
