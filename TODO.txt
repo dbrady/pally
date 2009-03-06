@@ -16,7 +16,10 @@ Feature Ideas from Ben:
 Feature Ideas from Dave:
 
 - Interactive mode (like irb)
+- Show a task/iteration/project/workspace
+- Searth for task/iter/etc by id
 - List iterations
+- Change default current iteration/project
 - Add a new story to the backlog
 - Change owner of a task
 - Search for tasks

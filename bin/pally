@@ -2,6 +2,7 @@
 require 'rubygems'
 require 'yaml'
 require 'trollop'
+require 'ruport'
 require 'rally_rest_api'
 
 require File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib', 'common.rb'))
@@ -40,6 +41,10 @@ def login(username, password)
   @rally = RallyRestAPI.new :username => username, :password => password
 end
 
+def listable?(type)
+  RallyRestAPI::ALLOWED_TYPES.include? type
+end
+
 # ----------------------------------------------------------------------
 # Parse out command
 command = args.shift
@@ -50,8 +55,26 @@ puts '-' * 80
 case command.downcase
 when 'list'
   login @config['login']['username'], @config['login']['password']
-  if RallyRestAPI::ALLOWED_TYPES.include? collection
+  if listable? collection
     puts @rally.find_all(collection).map {|i| "#{i.type}: #{i.name} | #{i.body}" }
+  elsif collection == 'mytasks'
+    tasks = @rally.find(:task, :fetch => true) do
+      equal :owner, 'david.brady@leadmediapartners.com'
+      not_equal :state, 'Completed'
+    end
+
+    tasks_by_project = Hash.new { |h,k| h[k] = []}
+    tasks.each do |t|
+      tasks_by_project[t.project.name] << t
+    end
+    plen = tasks_by_project.keys.map{|k| k.size}.max
+    slen = tasks_by_project.values.map{|vv| vv.map {|v| v.state.size}.max}.max
+    tasks_by_project.each do |project, tasks|
+      tasks.each do |task|
+        puts "%#{plen}s | %#{slen}s | %s" % [task.project, task.state, task.name]
+      end
+    end
+    
   else
     raise "LIST: unrecognized list type. Got #{collection.inspect}, expected one of [#{RallyRestAPI::ALLOWED_TYPES * ', '}]"
   end
