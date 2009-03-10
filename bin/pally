@@ -15,6 +15,7 @@ opts = Trollop.options do
   opt :password, "Password", :default => nil
   opt :project, "Project", :default => nil
   opt :iteration, "Iteration", :default => nil
+  opt :dump, "dump", :type => :boolean, :default => false
 end
 args = ARGV.dup
 
@@ -72,12 +73,15 @@ when 'list'
     plen = ["Project".size, tasks_by_project.keys.map{|k| k.size}.max].max
     slen = ["State".size, tasks_by_project.values.map{|vv| vv.map {|v| v.state.size}.max}.max].max
     fidlen = ["ID".size,tasks_by_project.values.map{|vv| vv.map {|v| v.formatted_i_d.size}.max}.max].max
+    iterlen = ["Iteration".size,tasks_by_project.values.map{|vv| vv.map {|v| (v.iteration && v.iteration.name.size)||0}.max}.max].max
     estlen = ["Est".size,tasks_by_project.values.map{|vv| vv.map {|v| (v.estimate||"").size}.max}.max].max
     todolen = ["ToDo".size,tasks_by_project.values.map{|vv| vv.map {|v| (v.to_do||"").size}.max}.max].max
-    puts "%#{plen}s | %#{fidlen}s | %#{estlen}s | %#{todolen}s | %#{slen}s | %s" % ["Project", "ID", "Est", "ToDo", "State", "Task"]
+    
+    puts "%#{plen}s | %#{iterlen}s | %#{fidlen}s | %#{estlen}s | %#{todolen}s | %#{slen}s | %s" % ["Project", "Iteration", "ID", "Est", "ToDo", "State", "Task"]
     tasks_by_project.each do |project, tasks|
       tasks.each do |task|
-        puts "%#{plen}s | %#{fidlen}s | %#{estlen}s | %#{todolen}s | %#{slen}s | %s" % [task.project, task.formatted_i_d, task.estimate, task.to_do, task.state, task.name]
+        puts "%#{plen}s | %#{iterlen}s | %#{fidlen}s | %#{estlen}s | %#{todolen}s | %#{slen}s | %s" % [task.project, (task.iteration ? task.iteration.name : ""), task.formatted_i_d, task.estimate, task.to_do, task.state, task.name]
+        puts task.body if opts[:dump]
       end
     end
     
