@@ -46,17 +46,37 @@ def listable?(type)
   RallyRestAPI::ALLOWED_TYPES.include? type
 end
 
+COLUMN_HEADER_REMAPPINGS = {
+  :project => "Project",
+  :iteration => "Iteration",
+  :formatted_i_d => "ID",
+  :estimate => "Est",
+  :actuals => "Act",
+  :to_do => "ToDo",
+  :state => "State",
+  :name => "Name"
+}
+
+Ruport::Data::Table.class_eval do
+  def pretty_columns!
+    column_names.each do |column_name|
+      if COLUMN_HEADER_REMAPPINGS[column_name.to_sym]
+        rename_column(column_name.to_sym, COLUMN_HEADER_REMAPPINGS[column_name.to_sym])
+      end
+    end
+  end
+end
 
 # ----------------------------------------------------------------------
 # Parse out command
 command = args.shift
-collection = args.shift
 
 puts "COMMAND: #{command} #{collection}"
 puts '-' * 80
 
 case command.downcase
 when 'list'
+  collection = args.shift
   login $config['login']['username'], $config['login']['password']
   if listable? collection
     puts @rally.find_all(collection).map {|i| "#{i.type}: #{i.name} | #{i.body}" }
@@ -66,20 +86,9 @@ when 'list'
       equal :owner, $config['login']['username']
       not_equal :state, 'Completed'
     end
-
-    table = Table(["Project", "Iteration", "ID", "Est", "ToDo", "State", "Task"])
-    tasks.each do |task|
-      table << {
-        "Project" => task.project,
-        "Iteration" => (task.iteration ? task.iteration.name : ""),
-        "ID" => task.formatted_i_d,
-        "Est" => task.estimate,
-        "ToDo" => task.to_do,
-        "State" => task.state,
-        "Task"  => task.name
-      }
-    end
-    table.sort_rows_by!(["Project", "Iteration", "ID"])
+    table = tasks.to_table([:project, :iteration, :formatted_i_d, :estimate, :actuals, :to_do, :state, :name])
+    table.sort_rows_by!([:project, :iteration, :formatted_i_d])
+    table.pretty_columns!
     puts table
   else
     raise "LIST: unrecognized list type. Got #{collection.inspect}, expected one of [#{RallyRestAPI::ALLOWED_TYPES * ', '}]"
