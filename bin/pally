@@ -64,6 +64,9 @@ COLUMN_HEADER_REMAPPINGS = {
   :actuals => "Act",
   :to_do => "ToDo",
   :state => "State",
+  :task_estimate_total => "Tasks Est",
+  :task_actual_total => "Tasks Act",
+  :task_remaining_total => "Tasks ToDo",
   :name => "Name"
 }
 
@@ -157,7 +160,7 @@ when 'list'
     puts table
   elsif collection == 'sprinttasks'
     $current_project = @rally.find(:project, :fetch => true) { equal :name, $config['current_project']}.first
-    $current_iteration = @rally.find(:iteration, :fetch => true) { equal :name, $config['current_iteration']}.first
+    $current_iteration = @rally.find(:iteration, :project => $current_project, :fetch => true) { equal :name, $config['current_iteration'] }.first
     tasks = @rally.find(:task, :fetch => true) do
       equal :owner, $config['login']['username']
       equal :project, $current_project
@@ -168,6 +171,28 @@ when 'list'
     table.pretty_columns!
     puts "Project:   #{$current_project.name}"
     puts "Iteration: #{$current_iteration.name}"
+    puts table
+  elsif collection == 'sprintstories'
+    $current_project = @rally.find(:project, :fetch => true) { equal :name, $config['current_project']}.first
+    $current_iteration = @rally.find(:iteration, :project => $current_project, :fetch => true) { equal :name, $config['current_iteration'] }.first
+    stories = @rally.find(:hierarchical_requirement, :project => $current_project, :fetch => true) do
+      equal :owner, $config['login']['username']
+      equal :iteration, $current_iteration
+    end
+    table = stories.to_table([:formatted_i_d, :name, :plan_estimate, :task_estimate_total, :task_actual_total, :task_remaining_total, :schedule_state])
+    table.sort_rows_by!([:formatted_i_d])
+    table.pretty_columns!
+    puts table
+  elsif collection == 'sprintdefects'
+    $current_project = @rally.find(:project, :fetch => true) { equal :name, $config['current_project']}.first
+    $current_iteration = @rally.find(:iteration, :project => $current_project, :fetch => true) { equal :name, $config['current_iteration'] }.first
+    defects = @rally.find(:defect, :project => $current_project, :fetch => true) do
+      equal :owner, $config['login']['username']
+      equal :iteration, $current_iteration
+    end
+    table = defects.to_table([:formatted_i_d, :name, :plan_estimate, :task_estimate_total, :task_actual_total, :task_remaining_total, :schedule_state])
+    table.sort_rows_by!([:formatted_i_d])
+    table.pretty_columns!
     puts table
   elsif collection == 'projects'
     projects = @rally.find_all(:projects, :fetch => true)
