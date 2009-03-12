@@ -130,6 +130,34 @@ when 'list'
     table.sort_rows_by!([:project, :iteration, :formatted_i_d])
     table.pretty_columns!
     puts table
+  elsif collection == 'sprinttasks'
+    $current_project = @rally.find(:project, :fetch => true) { equal :name, $config['current_project']}.first
+    $current_iteration = @rally.find(:iteration, :fetch => true) { equal :name, $config['current_iteration']}.first
+    tasks = @rally.find(:task, :fetch => true) do
+      equal :owner, $config['login']['username']
+      equal :project, $current_project
+      equal :iteration, $current_iteration
+    end
+    table = tasks.to_table([:work_product, :formatted_i_d, :estimate, :actuals, :to_do, :state, :name])
+    table.sort_rows_by!([:project, :iteration, :formatted_i_d])
+    table.pretty_columns!
+    puts "Project:   #{$current_project.name}"
+    puts "Iteration: #{$current_iteration.name}"
+    puts table
+  elsif collection == 'projects'
+    projects = @rally.find_all(:projects, :fetch => true)
+    table = projects.to_table([:name])
+    table.sort_rows_by!([:name])
+    table.pretty_columns!
+    puts table
+  elsif collection == 'iterations'
+    $current_project = @rally.find_all(:project, :fetch => true) { equal :name, $config['current_project']}.first
+    puts "Project:   #{$current_project.name}"
+    iterations = @rally.find(:iterations, :fetch => true) { equal :project, $current_project }
+    table = iterations.to_table([:project, :name])
+    table.sort_rows_by!([:project, :name])
+    table.pretty_columns!
+    puts table
   else
     raise "LIST: unrecognized list type. Got #{collection.inspect}, expected one of [#{RallyRestAPI::ALLOWED_TYPES * ', '}]"
   end
