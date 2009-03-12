@@ -6,7 +6,6 @@ require 'ruport'
 require 'rally_rest_api'
 
 require File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib', 'common.rb'))
-
 # usage:
 # pally [options] command <args>
 
@@ -71,10 +70,51 @@ end
 # Parse out command
 command = args.shift
 
-puts "COMMAND: #{command} #{collection}"
-puts '-' * 80
-
 case command.downcase
+when 'disown'
+  card_id = args.shift
+  login $config['login']['username'], $config['login']['password']
+  card_type = (
+    case card_id[0..0]
+    when "s" then :story
+    when "t" then :task
+    when "d" then :defect
+    else
+      puts "card id should be prefixed by s,t,d - depending on the type"
+      exit 1
+    end
+  )
+  if card = @rally.find(card_type, :fetch => true) { equal :formatted_i_d, card_id}.first
+    card.update(:owner => nil)
+    puts "#{card_type} #{card_id} disowned"
+  else
+    puts "Couldn't find #{card_type} #{card_id}."
+    exit 1
+  end
+when 'reset', 'complete', 'start'
+  task_id = args.shift
+  unless /^t[0-9]+/.match(task_id)
+    puts "Invalid task id: #{task_id}.  Try t#{task_id}."
+    exit 1
+  end
+  
+  target_state = (
+    case command
+    when 'start' then "In-Progress"
+    when 'complete' then "Completed"
+    when 'reset' then "Defined"
+    end
+  )
+  
+  login $config['login']['username'], $config['login']['password']
+  
+  if task = @rally.find(:task, :fetch => true) { equal :formatted_i_d, task_id}.first
+    task.update(:state => target_state)
+    puts "Task #{task_id} state set to #{target_state}"
+  else
+    puts "Couldn't find task #{task_id}."
+    exit 1
+  end
 when 'list'
   collection = args.shift
   login $config['login']['username'], $config['login']['password']
