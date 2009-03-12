@@ -45,6 +45,17 @@ def listable?(type)
   RallyRestAPI::ALLOWED_TYPES.include? type
 end
 
+def card_type_for(card_id)
+  case card_id[0..0]
+  when "s" then :story
+  when "t" then :task
+  when "d" then :defect
+  else
+    puts "card id should be prefixed by s,t,d - depending on the type"
+    exit 1
+  end
+end
+
 COLUMN_HEADER_REMAPPINGS = {
   :project => "Project",
   :iteration => "Iteration",
@@ -71,19 +82,33 @@ end
 command = args.shift
 
 case command.downcase
+when 'actuals'
+  card_id = args.shift
+  actuals = args.shift
+  login $config['login']['username'], $config['login']['password']
+  card_type = card_type_for(card_id)
+  card = @rally.find(card_type, :fetch => true) { equal :formatted_i_d, card_id}.first
+  if (card_type == :story) || (card_type == :defect)
+    tasks = @rally.find(:task, :fetch => true) { equal :work_product, card}
+    if tasks.results.length > 1
+      puts "There's more than one task for #{card_id}. You're going to have to specify which task you want"
+    elsif tasks.results.length == 0
+      puts "No tasks for #{card_id}. Creating default task"
+      task = @rally.create(:task, :name => "complete #{card.formatted_i_d} - #{card.name}", :actuals => actuals, :work_product => card, :state => "In-Progress", :owner => $config['login']['username'])
+      puts "Created default (in-progress) task #{task.formatted_i_d} and set actuals to #{task.actuals}"
+    else
+      task = tasks.first
+      task.update(:actuals => actuals)
+      puts "Updated #{card_id}'s task #{task.formatted_i_d} '#{task.name}' actuals to #{task.actuals}"
+    end
+  else
+    card.update(:actuals => actuals)
+    puts "Updated task #{card.formatted_i_d} actuals to #{card.actuals}"
+  end
 when 'disown'
   card_id = args.shift
   login $config['login']['username'], $config['login']['password']
-  card_type = (
-    case card_id[0..0]
-    when "s" then :story
-    when "t" then :task
-    when "d" then :defect
-    else
-      puts "card id should be prefixed by s,t,d - depending on the type"
-      exit 1
-    end
-  )
+  card_type = card_type_for(card_id)
   if card = @rally.find(card_type, :fetch => true) { equal :formatted_i_d, card_id}.first
     card.update(:owner => nil)
     puts "#{card_type} #{card_id} disowned"
