@@ -38,7 +38,7 @@ end
 # ----------------------------------------------------------------------
 # Crap that shouldn't even be in here but what ya gonna do
 def login(username, password)
-  @rally = RallyRestAPI.new :username => username, :password => password
+  $rally = RallyRestAPI.new :username => username, :password => password
 end
 
 def listable?(type)
@@ -54,6 +54,14 @@ def card_type_for(card_id)
     puts "card id should be prefixed by s,t,d - depending on the type"
     exit 1
   end
+end
+
+def current_project
+  $current_project ||= $rally.find(:project, :fetch => true) { equal :name, $config['current_project']}.first
+end
+
+def current_iteration
+  $current_iteration ||= $rally.find(:iteration, :project => current_project, :fetch => true) { equal :name, $config['current_iteration'] }.first
 end
 
 COLUMN_HEADER_REMAPPINGS = {
@@ -90,14 +98,14 @@ when 'actuals'
   actuals = args.shift
   login $config['login']['username'], $config['login']['password']
   card_type = card_type_for(card_id)
-  card = @rally.find(card_type, :fetch => true) { equal :formatted_i_d, card_id}.first
+  card = $rally.find(card_type, :fetch => true) { equal :formatted_i_d, card_id}.first
   if (card_type == :story) || (card_type == :defect)
-    tasks = @rally.find(:task, :fetch => true) { equal :work_product, card}
+    tasks = $rally.find(:task, :fetch => true) { equal :work_product, card}
     if tasks.results.length > 1
       puts "There's more than one task for #{card_id}. You're going to have to specify which task you want"
     elsif tasks.results.length == 0
       puts "No tasks for #{card_id}. Creating default task"
-      task = @rally.create(:task, :name => "complete #{card.formatted_i_d} - #{card.name}", :actuals => actuals, :work_product => card, :state => "In-Progress", :owner => $config['login']['username'])
+      task = $rally.create(:task, :name => "complete #{card.formatted_i_d} - #{card.name}", :actuals => actuals, :work_product => card, :state => "In-Progress", :owner => $config['login']['username'])
       puts "Created default (in-progress) task #{task.formatted_i_d} and set actuals to #{task.actuals}"
     else
       task = tasks.first
@@ -112,7 +120,7 @@ when 'disown'
   card_id = args.shift
   login $config['login']['username'], $config['login']['password']
   card_type = card_type_for(card_id)
-  if card = @rally.find(card_type, :fetch => true) { equal :formatted_i_d, card_id}.first
+  if card = $rally.find(card_type, :fetch => true) { equal :formatted_i_d, card_id}.first
     card.update(:owner => nil)
     puts "#{card_type} #{card_id} disowned"
   else
@@ -136,7 +144,7 @@ when 'reset', 'complete', 'start'
   
   login $config['login']['username'], $config['login']['password']
   
-  if task = @rally.find(:task, :fetch => true) { equal :formatted_i_d, task_id}.first
+  if task = $rally.find(:task, :fetch => true) { equal :formatted_i_d, task_id}.first
     task.update(:state => target_state)
     puts "Task #{task_id} state set to #{target_state}"
   else
@@ -147,10 +155,10 @@ when 'list'
   collection = args.shift
   login $config['login']['username'], $config['login']['password']
   if listable? collection
-    puts @rally.find_all(collection).map {|i| "#{i.type}: #{i.name} | #{i.body}" }
+    puts $rally.find_all(collection).map {|i| "#{i.type}: #{i.name} | #{i.body}" }
     
   elsif collection == 'mytasks'
-    tasks = @rally.find(:task, :fetch => true) do
+    tasks = $rally.find(:task, :fetch => true) do
       equal :owner, $config['login']['username']
       not_equal :state, 'Completed'
     end
@@ -159,51 +167,44 @@ when 'list'
     table.pretty_columns!
     puts table
   elsif collection == 'sprinttasks'
-    $current_project = @rally.find(:project, :fetch => true) { equal :name, $config['current_project']}.first
-    $current_iteration = @rally.find(:iteration, :project => $current_project, :fetch => true) { equal :name, $config['current_iteration'] }.first
-    tasks = @rally.find(:task, :fetch => true) do
+    tasks = $rally.find(:task, :fetch => true) do
       equal :owner, $config['login']['username']
-      equal :project, $current_project
-      equal :iteration, $current_iteration
+      equal :project, current_project
+      equal :iteration, current_iteration
     end
     table = tasks.to_table([:work_product, :formatted_i_d, :estimate, :actuals, :to_do, :state, :name])
     table.sort_rows_by!([:project, :iteration, :formatted_i_d])
     table.pretty_columns!
-    puts "Project:   #{$current_project.name}"
-    puts "Iteration: #{$current_iteration.name}"
+    puts "Project:   #{current_project.name}"
+    puts "Iteration: #{current_iteration.name}"
     puts table
   elsif collection == 'sprintstories'
-    $current_project = @rally.find(:project, :fetch => true) { equal :name, $config['current_project']}.first
-    $current_iteration = @rally.find(:iteration, :project => $current_project, :fetch => true) { equal :name, $config['current_iteration'] }.first
-    stories = @rally.find(:hierarchical_requirement, :project => $current_project, :fetch => true) do
+    stories = $rally.find(:hierarchical_requirement, :project => current_project, :fetch => true) do
       equal :owner, $config['login']['username']
-      equal :iteration, $current_iteration
+      equal :iteration, current_iteration
     end
     table = stories.to_table([:formatted_i_d, :name, :plan_estimate, :task_estimate_total, :task_actual_total, :task_remaining_total, :schedule_state])
     table.sort_rows_by!([:formatted_i_d])
     table.pretty_columns!
     puts table
   elsif collection == 'sprintdefects'
-    $current_project = @rally.find(:project, :fetch => true) { equal :name, $config['current_project']}.first
-    $current_iteration = @rally.find(:iteration, :project => $current_project, :fetch => true) { equal :name, $config['current_iteration'] }.first
-    defects = @rally.find(:defect, :project => $current_project, :fetch => true) do
+    defects = $rally.find(:defect, :project => current_project, :fetch => true) do
       equal :owner, $config['login']['username']
-      equal :iteration, $current_iteration
+      equal :iteration, current_iteration
     end
     table = defects.to_table([:formatted_i_d, :name, :plan_estimate, :task_estimate_total, :task_actual_total, :task_remaining_total, :schedule_state])
     table.sort_rows_by!([:formatted_i_d])
     table.pretty_columns!
     puts table
   elsif collection == 'projects'
-    projects = @rally.find_all(:projects, :fetch => true)
+    projects = $rally.find_all(:projects, :fetch => true)
     table = projects.to_table([:name])
     table.sort_rows_by!([:name])
     table.pretty_columns!
     puts table
   elsif collection == 'iterations'
-    $current_project = @rally.find_all(:project, :fetch => true) { equal :name, $config['current_project']}.first
-    puts "Project:   #{$current_project.name}"
-    iterations = @rally.find(:iterations, :fetch => true) { equal :project, $current_project }
+    puts "Project:   #{current_project.name}"
+    iterations = $rally.find(:iterations, :fetch => true) { equal :project, current_project }
     table = iterations.to_table([:project, :name])
     table.sort_rows_by!([:project, :name])
     table.pretty_columns!
