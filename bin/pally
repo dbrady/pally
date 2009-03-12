@@ -93,6 +93,11 @@ end
 command = args.shift
 
 case command.downcase
+when 'defect'
+  name = args.shift
+  login $config['login']['username'], $config['login']['password']
+  defect = $rally.create(:defect, :name => name, :owner => $config['login']['username'], :iteration => current_iteration, :schedule_state => 'Defined', :project => current_project)
+  puts "Created defect #{defect.formatted_i_d} \"#{name}\" project: #{current_project.name}, iteration: #{current_iteration.name}, state: #{defect.schedule_state}"
 when 'actuals'
   card_id = args.shift
   actuals = args.shift
