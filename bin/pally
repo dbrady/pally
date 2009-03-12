@@ -2,6 +2,7 @@
 require 'rubygems'
 require 'yaml'
 require 'trollop'
+require 'ruport'
 require 'rally_rest_api'
 
 require File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib', 'common.rb'))
@@ -53,6 +54,7 @@ collection = args.shift
 
 puts "COMMAND: #{command} #{collection}"
 puts '-' * 80
+
 case command.downcase
 when 'list'
   login $config['login']['username'], $config['login']['password']
@@ -65,33 +67,25 @@ when 'list'
       not_equal :state, 'Completed'
     end
 
-    tasks_by_project = Hash.new { |h,k| h[k] = []}
-    tasks.each do |t|
-      tasks_by_project[t.project.name] << t
+    table = Table(["Project", "Iteration", "ID", "Est", "ToDo", "State", "Task"])
+    tasks.each do |task|
+      table << {
+        "Project" => task.project,
+        "Iteration" => (task.iteration ? task.iteration.name : ""),
+        "ID" => task.formatted_i_d,
+        "Est" => task.estimate,
+        "ToDo" => task.to_do,
+        "State" => task.state,
+        "Task"  => task.name
+      }
     end
-    # DRY this up! Get the max length of each desired column.
-    plen = ["Project".size, tasks_by_project.keys.map{|k| k.size}.max].max
-    slen = ["State".size, tasks_by_project.values.map{|vv| vv.map {|v| v.state.size}.max}.max].max
-    fidlen = ["ID".size,tasks_by_project.values.map{|vv| vv.map {|v| v.formatted_i_d.size}.max}.max].max
-    iterlen = ["Iteration".size,tasks_by_project.values.map{|vv| vv.map {|v| (v.iteration && v.iteration.name.size)||0}.max}.max].max
-    estlen = ["Est".size,tasks_by_project.values.map{|vv| vv.map {|v| (v.estimate||"").size}.max}.max].max
-    todolen = ["ToDo".size,tasks_by_project.values.map{|vv| vv.map {|v| (v.to_do||"").size}.max}.max].max
-    
-    puts "%#{plen}s | %#{iterlen}s | %#{fidlen}s | %#{estlen}s | %#{todolen}s | %#{slen}s | %s" % ["Project", "Iteration", "ID", "Est", "ToDo", "State", "Task"]
-    tasks_by_project.each do |project, tasks|
-      tasks.each do |task|
-        puts "%#{plen}s | %#{iterlen}s | %#{fidlen}s | %#{estlen}s | %#{todolen}s | %#{slen}s | %s" % [task.project, (task.iteration ? task.iteration.name : ""), task.formatted_i_d, task.estimate, task.to_do, task.state, task.name]
-        puts task.body if opts[:dump]
-      end
-    end
-    
+    table.sort_rows_by!(["Project", "Iteration", "ID"])
+    puts table
   else
     raise "LIST: unrecognized list type. Got #{collection.inspect}, expected one of [#{RallyRestAPI::ALLOWED_TYPES * ', '}]"
   end
 else
   raise "Unrecognized command: #{command}"
 end
-
-
 
 
