@@ -133,11 +133,8 @@ when 'disown'
     exit 1
   end
 when 'reset', 'complete', 'start'
-  task_id = args.shift
-  unless /^t[0-9]+/.match(task_id)
-    puts "Invalid task id: #{task_id}.  Try t#{task_id}."
-    exit 1
-  end
+  card_id = args.shift
+  card_type = card_type_for(card_id)
   
   target_state = (
     case command
@@ -149,12 +146,24 @@ when 'reset', 'complete', 'start'
   
   login $config['login']['username'], $config['login']['password']
   
-  if task = $rally.find(:task, :fetch => true) { equal :formatted_i_d, task_id}.first
-    task.update(:state => target_state)
-    puts "Task #{task_id} state set to #{target_state}"
-  else
-    puts "Couldn't find task #{task_id}."
+  unless card = $rally.find(card_type, :fetch => true) { equal :formatted_i_d, card_id}.first
+    puts "Couldn't find task #{card_id}."
     exit 1
+  end
+  
+  if (card_type == :task)
+    task.update(:state => target_state)
+    puts "#{card_type} #{card_id} state set to #{target_state}"
+  else
+    if command == "complete"
+      tasks = $rally.find(:task, :fetch => true) { equal :work_product, card }
+      tasks.each do |task|
+        task.update(:state => target_state)
+        puts "task #{task.formatted_i_d} state set to #{task.state}"
+      end
+    end
+    card.update(:schedule_state => target_state)
+    puts "#{card_type} #{card_id} state set to #{card.schedule_state}"
   end
 when 'list'
   collection = args.shift
